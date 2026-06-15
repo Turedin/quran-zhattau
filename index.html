@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="kk" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob: https://cdn.islamic.network; connect-src 'self' https://api.alquran.cloud https://cdn.islamic.network https://*.googleapis.com https://*.firebaseio.com https://*.gstatic.com wss://*.firebaseio.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="no-referrer">
+<title>Құран жаттау</title>
+<meta name="theme-color" content="#2f7355">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Құран жаттау">
+<meta name="description" content="Құран жаттауға арналған қосымша">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<!-- Облако (необязательно): включается после настройки firebase-setup.md -->
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script defer src="firebase-config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Scheherazade+New:wght@400;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="bgLayer"></div>
+<div id="bgVeil"></div>
+
+<div id="app">
+  <header>
+    <div class="logo" id="logoTxt">Құран <span>жаттау</span></div>
+    <div class="head-tools">
+      <button class="icon-btn" id="themeBtn" onclick="cycleTheme()" aria-label="Тақырып"></button>
+      <div class="lang-sw">
+        <button id="lkk" onclick="setLang('kk')">ҚАЗ</button>
+        <button id="lru" onclick="setLang('ru')">РУС</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HOME -->
+  <section class="screen" id="scr-home">
+    <div class="card hero" id="motCard"></div>
+    <div class="stats-row">
+      <div class="stat"><div class="num" id="stStreak">0</div><div class="lbl" id="stStreakL"></div></div>
+      <div class="stat"><div class="num" id="stAyahs">0</div><div class="lbl" id="stAyahsL"></div></div>
+      <div class="stat"><div class="num" id="stMin">0</div><div class="lbl" id="stMinL"></div></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h3 id="hProgT"></h3>
+      <div class="bar"><i id="homeBar" style="width:0%"></i></div>
+      <div class="muted" id="homeBarTxt"></div>
+    </div>
+    <div class="card" id="srsCard"></div>
+    <div class="card" id="planCard"></div>
+    <div class="card">
+      <h3 id="hContT"></h3>
+      <div id="contArea" class="muted"></div>
+    </div>
+  </section>
+
+  <!-- LEARN: unit picker -->
+  <section class="screen" id="scr-learn">
+    <div class="card">
+      <h3 id="lModeT"></h3>
+      <div class="mode-grid" id="modeGrid"></div>
+      <div id="pickArea"></div>
+      <div class="btn-row"><button class="btn" id="goStudy" onclick="loadUnit()"></button></div>
+    </div>
+  </section>
+
+  <!-- STUDY -->
+  <section class="screen" id="scr-study">
+    <div class="card head-card">
+      <b id="studyTitle"></b>
+      <button class="btn sm sec" onclick="show('learn')" id="backBtn"></button>
+    </div>
+    <div id="studyArea"></div>
+    <div class="card loop-card">
+      <b id="loopT"></b>
+      <select id="loopN" style="width:auto;padding:7px 10px"><option>2</option><option selected>3</option><option>5</option><option>7</option><option>10</option></select>
+      <button class="btn sm gold" id="loopBtn" onclick="toggleLoop()"></button>
+    </div>
+    <div class="btn-row">
+      <button class="btn gold" id="toMem" onclick="startMem()"></button>
+      <button class="btn sec" id="toQuiz" onclick="startQuiz()"></button>
+      <button class="btn sec" id="vcBtn" onclick="openVoice()"></button>
+      <button class="btn sec" id="tjBtn" onclick="toggleTj()"></button>
+    </div>
+    <div class="legend" id="tjLegend" style="display:none"></div>
+  </section>
+
+  <!-- VOICE CHECK -->
+  <section class="screen" id="scr-voice">
+    <div class="card head-card2"><b id="vcTitle"></b>
+      <div class="muted" id="vcHint" style="margin-top:4px"></div></div>
+    <div class="card center">
+      <button class="mic" id="micBtn" onclick="vcToggle()" aria-label="mic"></button>
+      <div class="muted" id="vcStatus" style="margin-top:10px"></div>
+    </div>
+    <div class="card"><div class="mem-area" id="vcArea" style="font-size:22px"></div></div>
+    <div class="card">
+      <h3 id="cmpTitle"></h3>
+      <div class="muted" id="cmpHintTxt"></div>
+      <div class="btn-row"><button class="btn" id="cmpBtn" onclick="cmpToggle()"></button></div>
+      <div id="cmpRes" style="margin-top:10px"></div>
+    </div>
+    <div class="card">
+      <div class="muted" id="vcRecHint"></div>
+      <div class="btn-row">
+        <button class="btn gold" id="vcRecBtn" onclick="recForUstaz()"></button>
+        <button class="btn sec" id="vcBack" onclick="show('study')"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MEMORIZE / self-check -->
+  <section class="screen" id="scr-mem">
+    <div class="card head-card2">
+      <b id="memTitle"></b>
+      <div class="muted" id="memHint" style="margin-top:4px"></div>
+    </div>
+    <div class="card"><div class="mem-area" id="memArea"></div></div>
+    <div class="btn-row">
+      <button class="btn" id="memDone" onclick="finishMem()"></button>
+      <button class="btn sec" id="memHintBtn" onclick="memHintReveal()"></button>
+      <button class="btn sec" id="memBack" onclick="show('study2')"></button>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="screen" id="scr-quiz">
+    <div class="card head-card2"><b id="quizTitle"></b>
+      <div class="muted" id="quizScore" style="margin-top:4px"></div></div>
+    <div class="card" id="quizCard"></div>
+    <div class="btn-row"><button class="btn sec" id="quizBack" onclick="show('study2')"></button></div>
+  </section>
+
+  <!-- VOCAB -->
+  <section class="screen" id="scr-vocab">
+    <div class="card">
+      <h3 id="vT"></h3>
+      <div class="muted" id="vSub"></div>
+      <div class="v-search">
+        <span class="v-search-ic" id="vSearchIc"></span>
+        <input id="vSearch" type="search" autocomplete="off" oninput="renderVocabBody()" placeholder="">
+        <button class="v-clear" id="vClear" onclick="clearVSearch()" aria-label="clear"></button>
+      </div>
+      <div class="seg" id="vModeSeg">
+        <button id="vModeListBtn" class="on" onclick="setVocabMode('list')"></button>
+        <button id="vModeCardsBtn" onclick="setVocabMode('cards')"></button>
+      </div>
+      <div class="chips" id="vCats"></div>
+    </div>
+    <div class="card" id="vListWrap"><div id="vList"></div></div>
+    <div id="vCardsWrap" style="display:none">
+      <div class="card center flashcard" id="vCardArea" onclick="flipCard()"></div>
+      <div class="btn-row" style="justify-content:center" id="vCardBtns"></div>
+    </div>
+  </section>
+
+  <!-- PROGRESS -->
+  <section class="screen" id="scr-prog">
+    <div class="card">
+      <h3 id="pT"></h3>
+      <div class="bar"><i id="pBar" style="width:0%"></i></div>
+      <div class="muted" id="pBarTxt"></div>
+    </div>
+    <div class="card"><h3 id="wkT"></h3><div class="wk" id="wkChart"></div></div>
+    <div class="card"><h3 id="achT"></h3><div class="ach-grid" id="achGrid"></div></div>
+    <div class="card"><h3 id="pCalT"></h3><div class="cal" id="calGrid"></div></div>
+    <div class="card"><h3 id="pUnitsT"></h3><div id="pUnits"></div></div>
+    <div class="card"><h3 id="pWeakT"></h3><div class="muted" id="pWeakSub"></div><div id="pWeak" style="margin-top:6px"></div></div>
+    <div class="card"><h3 id="plSetT"></h3><div id="planSetup"></div></div>
+    <div class="card"><h3 id="shT"></h3><div class="muted" id="shSub"></div>
+      <div class="btn-row"><button class="btn" id="shBtn" onclick="shareProgress()"></button></div>
+      <div id="grpArea" style="margin-top:12px"></div></div>
+  </section>
+
+  <!-- WEAK WORDS TRAINER -->
+  <section class="screen" id="scr-wtrain">
+    <div class="card head-card2"><b id="wtT"></b>
+      <div class="muted" id="wtHintTxt" style="margin-top:4px"></div></div>
+    <div class="card center" id="wtCard"></div>
+    <div class="btn-row"><button class="btn sec" id="wtBack" onclick="show('prog')"></button></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="screen" id="scr-set">
+    <div class="card">
+      <h3 id="sThemeT"></h3>
+      <div class="mode-grid" id="themeGrid"></div>
+    </div>
+    <div class="card">
+      <h3 id="sBgT"></h3>
+      <div class="muted" id="sBgSub"></div>
+      <div class="bg-grid" id="bgGrid"></div>
+      <label class="fld" id="bgOpacityL"></label>
+      <input type="range" id="bgOpacity" min="10" max="100" value="55" oninput="setBgOpacity(this.value)">
+      <div class="btn-row">
+        <button class="btn sec sm" id="bgUploadBtn" onclick="document.getElementById('bgFile').click()"></button>
+        <input type="file" id="bgFile" accept="image/*" style="display:none" onchange="uploadBg(this)">
+      </div>
+    </div>
+    <div class="card">
+      <h3 id="recT"></h3>
+      <select id="recSel" onchange="setReciter(this.value)"></select>
+    </div>
+    <div class="card">
+      <h3 id="sRemT"></h3>
+      <div class="muted" id="sRemSub"></div>
+      <label class="fld" id="sTimeL"></label>
+      <input type="time" id="remTime" value="20:00">
+      <div class="btn-row">
+        <button class="btn" id="remOn" onclick="enableReminder()"></button>
+      </div>
+      <div class="muted" id="remStatus" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h3 id="sDataT"></h3>
+      <div class="btn-row">
+        <button class="btn sec" id="expBtn" onclick="exportData()"></button>
+        <button class="btn danger" id="resetBtn" onclick="resetData()"></button>
+      </div>
+    </div>
+    <div class="card muted" style="font-size:12px" id="aboutTxt"></div>
+  </section>
+</div>
+
+<nav id="nav"></nav>
+<div class="toast" id="toast"></div>
+
+<script src="vocab.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

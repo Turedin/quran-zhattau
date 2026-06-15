@@ -1,0 +1,14 @@
+# Capacitor / Android сборка (генерируется локально, коммитить не нужно)
+android-build/node_modules/
+android-build/www/
+android-build/android/
+android-build/.gradle/
+
+# Node
+node_modules/
+package-lock.json
+
+# Система
+.DS_Store
+Thumbs.db
+*.log

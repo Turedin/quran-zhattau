@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ұстаз кабинеті — Құран жаттау</title>
+<meta name="theme-color" content="#2e6b4f">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script defer src="firebase-config.js"></script>
+<style>
+:root{--bg:#faf5ec;--card:#fffdf8;--card2:#f6efe2;--ink:#3d342b;--ink2:#8a7d6d;--line:#e9dfcd;
+--green:#2e6b4f;--green2:#e3efe8;--gold:#c9962e;--gold2:#f7ecd4;--red:#b3543f;
+--r:18px;--shadow:0 4px 18px rgba(110,90,60,.10)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;min-height:100vh}
+#app{max-width:760px;margin:0 auto;padding:16px 14px 60px}
+header{display:flex;align-items:center;justify-content:space-between;padding:6px 4px 16px}
+.logo{font-weight:800;font-size:21px;color:var(--green)}
+.logo span{color:var(--gold)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;margin-bottom:14px}
+.card h3{font-size:15px;margin-bottom:10px;color:var(--green)}
+.muted{color:var(--ink2);font-size:13px}
+.btn{border:0;border-radius:13px;padding:11px 18px;font-family:inherit;font-weight:800;font-size:14px;cursor:pointer;background:var(--green);color:#fff}
+.btn.sec{background:var(--card2);color:var(--ink)}
+.btn.gold{background:var(--gold);color:#fff}
+.btn.sm{padding:7px 13px;font-size:12.5px;border-radius:10px}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+input,textarea{font-family:inherit;font-size:14px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);width:100%}
+label.fld{display:block;font-size:12.5px;font-weight:700;color:var(--ink2);margin:10px 0 5px}
+.p-item{display:flex;justify-content:space-between;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line);font-size:14px;gap:8px;flex-wrap:wrap}
+.p-item:last-child{border:0}
+.badge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;background:var(--green2);color:var(--green)}
+.badge.y{background:var(--gold2);color:var(--gold)}
+.code{font-size:22px;font-weight:800;letter-spacing:4px;color:var(--gold);background:var(--gold2);border-radius:12px;padding:8px 16px;display:inline-block}
+.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:10px 20px;font-size:13.5px;font-weight:700;z-index:99;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.on{opacity:1}
+.hide{display:none}
+audio{width:100%;margin-top:6px;height:36px}
+.lang-sw{display:flex;background:var(--card2);border-radius:999px;padding:3px}
+.lang-sw button{border:0;background:transparent;padding:5px 12px;border-radius:999px;font-family:inherit;font-weight:700;color:var(--ink2);cursor:pointer;font-size:12.5px}
+.lang-sw button.on{background:var(--green);color:#fff}
+.stu{background:var(--card2);border-radius:14px;padding:12px;margin-bottom:10px}
+.stu .hd{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.stu .body{display:none;margin-top:10px}
+.stu.open .body{display:block}
+</style>
+</head>
+<body>
+<div id="app">
+ <header>
+ <div class="logo">Ұстаз <span>кабинеті</span></div>
+ <div class="lang-sw">
+ <button id="lkk" onclick="setLang('kk')">ҚАЗ</button>
+ <button id="lru" onclick="setLang('ru')">РУС</button>
+ </div>
+ </header>
+
+ <div class="card" id="cfgWarn" style="display:none;border-color:var(--red)">
+ <b style="color:var(--red)" id="wCfg"></b>
+ </div>
+
+ <!-- AUTH -->
+ <div class="card" id="authCard">
+ <h3 id="aT"></h3>
+ <label class="fld" id="aEmailL"></label><input type="email" id="aEmail">
+ <label class="fld" id="aPassL"></label><input type="password" id="aPass">
+ <div class="btn-row">
+ <button class="btn" id="aIn" onclick="signIn()"></button>
+ <button class="btn sec" id="aUp" onclick="signUp()"></button>
+ </div>
+ <div class="muted" id="aMsg" style="margin-top:8px"></div>
+ </div>
+
+ <!-- GROUPS -->
+ <div id="main" class="hide">
+ <div class="card">
+ <div class="p-item"><b id="meEmail"></b><button class="btn sm sec" id="outBtn" onclick="signOut()"></button></div>
+ </div>
+ <div class="card">
+ <h3 id="gT"></h3>
+ <div id="gList" class="muted"></div>
+ <div class="btn-row"><button class="btn gold" id="gNew" onclick="createGroup()"></button></div>
+ </div>
+ <div id="gView"></div>
+ </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const T={
+kk:{
+ wCfg:"Облако не настроено: заполните firebase-config.js (инструкция — firebase-setup.md)",
+ aT:"Кіру / Тіркелу", aEmail:"Email", aPass:"Құпиясөз (кемі 6 таңба)", aIn:"Кіру", aUp:"Тіркелу",
+ out:"Шығу", gT:"Менің топтарым", gNew:"Жаңа топ құру", gNone:"Топ әлі жоқ — біреуін құрыңыз",
+ gCode:"Топ коды (оқушыларға беріңіз):", gOpen:"Ашу", students:"Оқушылар",
+ sNone:"Оқушылар әлі қосылған жоқ. Оларға топ кодын беріңіз — қосымшадағы «Прогресс» бетінен қосылады.",
+ ayahs:"аят", streak:"күн", today:"бүгін мин", lastSeen:"соңғы белсенділік",
+ recs:"Тилауат жазбалары", recNone:"Жазбалар жоқ",
+ fbT:"Пікір жазу", fbSend:"Жіберу", fbOk:"Пікір жіберілді",
+ err:"Қате. Қайталап көріңіз", del:"Топты өшіру", delQ:"Топты өшіресіз бе? Оқушы деректері де өшеді."
+},
+ru:{
+ wCfg:"Облако не настроено: заполните firebase-config.js (инструкция — firebase-setup.md)",
+ aT:"Вход / Регистрация", aEmail:"Email", aPass:"Пароль (мин. 6 символов)", aIn:"Войти", aUp:"Регистрация",
+ out:"Выйти", gT:"Мои группы", gNew:"Создать группу", gNone:"Групп пока нет — создайте первую",
+ gCode:"Код группы (передайте ученикам):", gOpen:"Открыть", students:"Ученики",
+ sNone:"Ученики ещё не присоединились. Передайте им код группы — они вводят его во вкладке «Прогресс» приложения.",
+ ayahs:"аятов", streak:"дн.", today:"мин сегодня", lastSeen:"был(а)",
+ recs:"Записи чтения", recNone:"Записей нет",
+ fbT:"Написать отзыв", fbSend:"Отправить", fbOk:"Отзыв отправлен",
+ err:"Ошибка. Попробуйте ещё раз", del:"Удалить группу", delQ:"Удалить группу? Данные учеников тоже удалятся."
+}};
+let lang=localStorage.getItem('uz_lang')||'ru';
+function t(k){return T[lang][k];}
+function setLang(l){lang=l;localStorage.setItem('uz_lang',l);applyLang();}
+function toastMsg(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2200);}
+function applyLang(){
+ document.getElementById('lkk').classList.toggle('on',lang==='kk');
+ document.getElementById('lru').classList.toggle('on',lang==='ru');
+ ['wCfg','aT','aIn','aUp','gT','gNew'].forEach(id=>document.getElementById(id).textContent=t(id));
+ document.getElementById('aEmailL').textContent=t('aEmail');
+ document.getElementById('aPassL').textContent=t('aPass');
+ document.getElementById('outBtn').textContent=t('out');
+ if(me) renderGroups();
+}
+
+let fb=null, me=null, curGroup=null;
+function fbReady(){
+ return typeof firebase!=='undefined' && window.QJ_FIREBASE &&
+ window.QJ_FIREBASE.apiKey && window.QJ_FIREBASE.apiKey.indexOf('PASTE')!==0;
+}
+function boot(){
+ applyLang();
+ if(!fbReady()){ document.getElementById('cfgWarn').style.display='block'; return; }
+ if(!firebase.apps.length) firebase.initializeApp(window.QJ_FIREBASE);
+ fb={db:firebase.firestore(), st:firebase.storage(), auth:firebase.auth()};
+ fb.auth.onAuthStateChanged(u=>{
+ me = (u && !u.isAnonymous) ? u : null;
+ document.getElementById('authCard').classList.toggle('hide', !!me);
+ document.getElementById('main').classList.toggle('hide', !me);
+ if(me){ document.getElementById('meEmail').textContent=me.email; renderGroups(); }
+ });
+}
+async function signIn(){
+ try{ await fb.auth.signInWithEmailAndPassword(aEmail.value.trim(), aPass.value); }
+ catch(e){ document.getElementById('aMsg').textContent=t('err')+':'+(e.code||''); }
+}
+async function signUp(){
+ try{ await fb.auth.createUserWithEmailAndPassword(aEmail.value.trim(), aPass.value); }
+ catch(e){ document.getElementById('aMsg').textContent=t('err')+':'+(e.code||''); }
+}
+function signOut(){ fb.auth.signOut(); document.getElementById('gView').innerHTML=''; }
+
+async function renderGroups(){
+ const el=document.getElementById('gList');
+ try{
+ const q=await fb.db.collection('groups').where('ustazUid','==',me.uid).get();
+ el.innerHTML = q.empty ? t('gNone')
+ : q.docs.map(d=>'<div class="p-item"><span class="code" style="font-size:16px;letter-spacing:2px">'+d.id+'</span>'+
+'<button class="btn sm" onclick="openGroup(\''+d.id+'\')">'+t('gOpen')+'</button></div>').join('');
+ }catch(e){ el.textContent=t('err'); }
+}
+async function createGroup(){
+ const code=Array.from({length:6},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
+ try{
+ await fb.db.collection('groups').doc(code).set({ustazUid:me.uid, created:Date.now()});
+ renderGroups(); openGroup(code);
+ }catch(e){ toastMsg(t('err')); }
+}
+async function delGroup(code){
+ if(!confirm(t('delQ'))) return;
+ try{ await fb.db.collection('groups').doc(code).delete(); document.getElementById('gView').innerHTML=''; renderGroups(); }
+ catch(e){ toastMsg(t('err')); }
+}
+async function openGroup(code){
+ curGroup=code;
+ const v=document.getElementById('gView');
+ v.innerHTML='<div class="card"><h3>'+t('gCode')+'</h3><span class="code">'+code+'</span>'+
+'<div class="btn-row"><button class="btn sm sec" style="color:var(--red)" onclick="delGroup(\''+code+'\')">'+t('del')+'</button></div></div>'+
+'<div class="card"><h3>'+t('students')+'</h3><div id="stuList" class="muted"></div></div>';
+ try{
+ const q=await fb.db.collection('groups').doc(code).collection('students').get();
+ const el=document.getElementById('stuList');
+ if(q.empty){ el.textContent=t('sNone'); return; }
+ el.innerHTML=q.docs.map(d=>{
+ const x=d.data();
+ const seen=x.ts?new Date(x.ts).toLocaleDateString():'—';
+ return'<div class="stu" id="stu_'+d.id+'"><div class="hd" onclick="toggleStu(\''+d.id+'\')">'+
+'<b>'+String(x.name||'?').replace(/</g,'&lt;')+'</b>'+
+'<span><span class="badge">'+(x.ayahs||0)+''+t('ayahs')+'</span>'+
+'<span class="badge y">'+(x.streak||0)+''+t('streak')+'</span></span></div>'+
+'<div class="body"><div class="muted">'+t('today')+':'+(x.minToday||0)+' ·'+t('lastSeen')+':'+seen+'</div>'+
+'<div id="recs_'+d.id+'" style="margin-top:8px"><div class="muted">...</div></div>'+
+'<label class="fld">'+t('fbT')+'</label><textarea id="fb_'+d.id+'" rows="2"></textarea>'+
+'<div class="btn-row"><button class="btn sm gold" onclick="sendFb(\''+d.id+'\')">'+t('fbSend')+'</button></div>'+
+'</div></div>';
+ }).join('');
+ }catch(e){ document.getElementById('stuList').textContent=t('err'); }
+}
+async function toggleStu(uid){
+ const el=document.getElementById('stu_'+uid);
+ el.classList.toggle('open');
+ if(!el.classList.contains('open')) return;
+ const rd=document.getElementById('recs_'+uid);
+ try{
+ const q=await fb.db.collection('groups').doc(curGroup).collection('students').doc(uid)
+ .collection('recordings').orderBy('ts','desc').limit(5).get();
+ if(q.empty){ rd.innerHTML='<div class="muted">'+t('recNone')+'</div>'; return; }
+ rd.innerHTML='<b style="font-size:13px">'+t('recs')+'</b>';
+ for(const d of q.docs){
+ const x=d.data();
+ try{
+ const url=await fb.st.ref(x.path).getDownloadURL();
+ rd.innerHTML+='<div class="muted" style="margin-top:6px">'+new Date(x.ts).toLocaleString()+
+ (x.unit?' ·'+String(x.unit).replace(/</g,'&lt;'):'')+'</div><audio controls preload="none" src="'+url+'"></audio>';
+ }catch(e){}
+ }
+ }catch(e){ rd.innerHTML='<div class="muted">'+t('recNone')+'</div>'; }
+}
+async function sendFb(uid){
+ const ta=document.getElementById('fb_'+uid);
+ const txt=(ta.value||'').trim();
+ if(!txt) return;
+ try{
+ await fb.db.collection('groups').doc(curGroup).collection('students').doc(uid)
+ .collection('feedback').add({text:txt, ts:Date.now(), ustaz:me.email});
+ ta.value=''; toastMsg(t('fbOk'));
+ }catch(e){ toastMsg(t('err')); }
+}
+window.addEventListener('load', boot);
+</script>
+</body>
+</html>
